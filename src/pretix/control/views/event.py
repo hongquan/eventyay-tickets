@@ -1,3 +1,4 @@
+import logging
 import json
 import operator
 import re
@@ -31,7 +32,6 @@ from django.views.generic.base import TemplateView, View
 from django.views.generic.detail import SingleObjectMixin
 from i18nfield.strings import LazyI18nString
 from i18nfield.utils import I18nJSONEncoder
-from pytz import timezone
 
 from pretix.base.channels import get_all_sales_channels
 from pretix.base.email import get_available_placeholders
@@ -43,6 +43,7 @@ from pretix.base.models import (
     TaxRule,
     Voucher,
 )
+from pretix.base.settings import GlobalSettingsObject
 from pretix.base.models.event import EventMetaValue
 from pretix.base.services import tickets
 from pretix.base.services.invoices import build_preview_invoice_pdf
@@ -88,6 +89,9 @@ from ...base.models.items import (
 from ...base.settings import SETTINGS_AFFECTING_CSS
 from ..logdisplay import OVERVIEW_BANLIST
 from . import CreateView, PaginationMixin, UpdateView
+
+
+logger = logging.getLogger(__name__)
 
 
 class EventSettingsViewMixin:
@@ -243,15 +247,15 @@ class EventUpdate(
 
     def post(self, request, *args, **kwargs):
         form = self.get_form()
-    
+
         # Check each form individually and collect validation results
         form_valid = form.is_valid()
         sform_valid = self.sform.is_valid()
         meta_forms_valid = all([f.is_valid() for f in self.meta_forms])
         item_meta_property_formset_valid = self.item_meta_property_formset.is_valid()
         confirm_texts_formset_valid = self.confirm_texts_formset.is_valid()
-    
-        if (form_valid and sform_valid and meta_forms_valid and 
+
+        if (form_valid and sform_valid and meta_forms_valid and
             item_meta_property_formset_valid and confirm_texts_formset_valid):
             # Timezone processing for presale_start and presale_end (fields in this form)
             # is now handled within form.clean()
@@ -269,7 +273,7 @@ class EventUpdate(
                 error_messages.append("Item meta property form validation failed.")
             if not confirm_texts_formset_valid:
                 error_messages.append("Confirmation texts form validation failed.")
-        
+
             if error_messages:
                 for msg in error_messages:
                     messages.error(self.request, msg)
@@ -733,6 +737,14 @@ class MailSettings(EventSettingsViewMixin, EventSettingsFormView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['renderers'] = self.request.event.get_html_mail_renderers()
+        # Check the active email backend to warn the user if it is not SMTP.
+        # Note that the event may have its own settings for the email backend.
+        gs = GlobalSettingsObject()
+        logger.info('Current email vendor %s', gs.settings.email_vendor)
+        logger.info('SMTP host: %s', gs.settings.smtp_host)
+        if gs.settings.email_vendor is None and 'smtp' not in settings.EMAIL_BACKEND:
+            ctx['email_backend_warning'] = _('The site is currently configured to use a non-SMTP email backend. '
+                                             'These SMTP settings here may not have effect.')
         return ctx
 
     def get_form(self):

@@ -180,6 +180,22 @@ ALLOWED_HOSTS = ['*']
 LANGUAGE_CODE = config.get('locale', 'default', fallback='en')
 TIME_ZONE = config.get('locale', 'timezone', fallback='UTC')
 
+# Email settings
+
+# Possible values for email backend in pretix.cfg:
+# - 'filebased'
+# - 'locmem'
+# - 'smtp'
+_email_backend_name = config.get('mail', 'backend', fallback='filebased')
+# To be safe, the default email backend is filebased, so that we don't send emails by accident.
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+if _email_backend_name == 'locmem':
+    EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+elif _email_backend_name == 'smtp':
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+EMAIL_FILE_PATH = os.path.join(DATA_DIR, 'emails')  # Used by filebased backend
+
 MAIL_FROM = SERVER_EMAIL = DEFAULT_FROM_EMAIL = config.get('mail', 'from', fallback='pretix@localhost')
 EMAIL_HOST = config.get('mail', 'host', fallback='localhost')
 EMAIL_PORT = config.getint('mail', 'port', fallback=25)

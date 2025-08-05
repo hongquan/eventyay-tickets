@@ -50,10 +50,15 @@
                 </div>
             </fieldset>
             <fieldset>
-                <legend>{% trans "Email settings" %}</legend>     
+                <legend>{% trans "Email settings" %}</legend>
+                {% if email_backend_warning %}
+                    <div class='alert alert-warning'>
+                        {{ email_backend_warning }}
+                    </div>
+                {% endif %}
                 {% bootstrap_field form.smtp_use_custom layout="control" %}
                 {% bootstrap_field form.email_vendor layout="control" %}
-                {% bootstrap_field form.send_grid_api_key layout="control" %} 
+                {% bootstrap_field form.send_grid_api_key layout="control" %}
                 {% bootstrap_field form.smtp_host layout="control" %}
                 {% bootstrap_field form.smtp_port layout="control" %}
                 {% bootstrap_field form.smtp_username layout="control" %}

@@ -266,6 +266,9 @@ test = [
     "pytest-xdist>=3.6.1",
 ]
 
+[tool.uv.sources]
+pretix_venueless = { path = './eventyay/plugins/eventyay-ticket-video', editable = true }
+
 [tool.ruff]
 line-length = 120
 
@@ -286,4 +289,3 @@ ignore = ["E722", "E741"]
 
 [tool.setuptools]
 packages = ["eventyay"]
-

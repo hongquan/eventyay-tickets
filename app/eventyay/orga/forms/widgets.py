@@ -17,11 +17,12 @@ class MultipleLanguagesWidget(CheckboxSelectMultiple):
         super().__init__(*args, **kwargs)
 
     def sort(self):
+        choices = self.choices
         official_languages = [
-            choice for choice in self.choices if settings.LANGUAGES_INFORMATION[choice[0]].get('official')
+            choice for choice in choices if is_language_official(choice[0])
         ]
         inofficial_languages = [
-            choice for choice in self.choices if not settings.LANGUAGES_INFORMATION[choice[0]].get('official')
+            choice for choice in choices if is_language_supported_non_official(choice[0])
         ]
         self.choices = (
             (
@@ -58,3 +59,12 @@ class MultipleLanguagesWidget(CheckboxSelectMultiple):
         opt['official'] = bool(language.get('official'))
         opt['percentage'] = language['percentage']
         return opt
+
+
+def is_language_official(lang_code):
+    return settings.LANGUAGES_INFORMATION.get(lang_code, {}).get('official', False)
+
+
+def is_language_supported_non_official(lang_code):
+    lang_info = settings.LANGUAGES_INFORMATION.get(lang_code, {})
+    return bool(lang_info) and not lang_info.get('official', False)
